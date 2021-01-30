@@ -1,9 +1,8 @@
 import * as types from "./"
 
 import getMoves from "../../core/getMoves";
-// import { getNextMovable, getNextSnapshot, findCheckCode, applySpecialActions} from '~/chess/core'
-// import { getSpecial, getPrevSnapshots, createTimeline, findCodeByTile, parseCode, replaceSnapshot, diffSnapshot} from '~/chess/helpers'
-// import { isEmpty, lazy, merge } from '~/utils'
+
+import isChecked, { getCheckingMoves } from "../../core/isChecked";
 
 export function setTs (ts = +new Date()) {
     return {
@@ -26,10 +25,10 @@ export function setMovable (moves = []) {
     }
 }
 
-export function setMove (move) {
+export function setSpecialMovable (moves = []) {
     return {
-        type: types.SET_MOVE,
-        payload: move
+        type: types.SET_SPECIAL_MOVABLE_TILES,
+        payload: moves
     }
 }
 
@@ -47,16 +46,23 @@ export function toggleTurn (turn) {
     }
 }
 
-export function setCheckTo (code = '') {
+export function setCheckedByPieces (checkedByPieces = 0) {
     return {
-        type: types.SET_CHECK_TO,
-        payload: code
+        type: types.SET_IS_CHECKED,
+        payload: checkedByPieces
     }
 }
 
-export function setCheckBy (code = '') {
+export function setCheckingMoves (checkingMoves = []) {
     return {
-        type: types.SET_CHECK_BY,
+        type: types.SET_CHECKING_MOVES,
+        payload: checkingMoves
+    }
+}
+
+export function setPromotionCode(code) {
+    return {
+        type: types.SET_PROMOTION_CODE,
         payload: code
     }
 }
@@ -68,59 +74,40 @@ export function setSnapshot (snapshot) {
     }
 }
 
-export function restartGame (ts = +new Date()) {
+export function setSnapshotMove (move = '') {
     return {
-        type: types.RESTART_GAME,
-        payload: ts
+        type: types.SET_SNAPSHOT_MOVE,
+        payload: move
     }
 }
 
-export function setNext () {
-    return (dispatch, getState) => {
-
-        dispatch(setSelected())
-        dispatch(setTs())
-
-        const { game } = getState()
-        const { present, past } = game
-        const { turn } = present
-        const checkBy = "";
-        const checkTo = "";
-        // const { checkTo, checkBy } = R.compose(
-        // findCheckCode,
-        // lazy,
-        // merge({ turn, snapshot }),
-        // parseCode,
-        // diffSnapshot(snapshot),
-        // R.prop(0),
-        // getPrevSnapshots
-        // )(past)
-
-        dispatch(setCheckTo(checkTo))
-        dispatch(setCheckBy(checkBy))
+export function setCheck (checkedByPieces, checkingMoves) {
+    return (dispatch) => {        
+        dispatch(setCheckedByPieces(checkedByPieces));
+        dispatch(setCheckingMoves(checkingMoves));
     }
 }
 
 export function setNextMovableTiles() {
     return (dispatch, getState) => {
         const { game } = getState();
+        
         const { present, past } = game;
-        const { snapshot, turn } = present;
-        const { moves, move } = past || {};
-        const newTurn = turn === '' ? 'w' : turn === 'w' ? 'b' : 'w';
-        const newMoves = getMoves(snapshot, newTurn, moves, move, false);
-        dispatch(setTs());
+        const { moves } = past[past.length - 1] || [];
+        const { turn, checkedByPieces, checkingMoves, snapshot, snapshotMove } = present || {};
+        const { moves: newMoves, specialMoves } = getMoves(snapshot, turn, moves, snapshotMove, checkedByPieces, checkingMoves);
+
         dispatch(setMovable(newMoves));
-        dispatch(toggleTurn(newTurn));
+        dispatch(setSpecialMovable(specialMoves));
     }
 }
 
 export function setNextSelected (piece, code) {
     return (dispatch, getState) => {
-        console.log("IN NEXT SELECTED")
         const { game } = getState()
-        const { present } = game
-        const { moves } = present
+        const {present } = game;
+
+        const { moves, promotionCode } = present;
         
         let selectedMoves = [];
         
@@ -130,22 +117,29 @@ export function setNextSelected (piece, code) {
             const destinationCode = move.substring(4, 6);
             if (sourceCode === code) selectedMoves.push(destinationCode);
         }
+
+        if (promotionCode) dispatch(setPromotionCode(''));
+
         dispatch(setSelected(piece + code));
         dispatch(setSelectedMoves(selectedMoves));
     };
-    
 }
 
-export function setNextSnapshot (newMove) {
+export function setNextSnapshot (newMove, promotionPiece = '') {
     return (dispatch, getState) => {
-        console.log("IN NEXT SNAPSHOT")
         const { game } = getState();
         const { present } = game;
-        const { selected, snapshot, turn, selectedMoves } = present;
+
+        const { snapshot, selected, turn, selectedMoves, checkedByPieces, specialMoves } = present;
+
         let newSnapshot = [...snapshot];
+        let newTurn = turn === 'w' ? 'b' : 'w';
+        let newSnapshotMove = '';
         if (selected && selected.charAt(0) === turn && selectedMoves.indexOf(newMove) !== -1) {
             let pieceIndex = newSnapshot.findIndex(code => code.includes(newMove));
+            let captured = false;
             if (pieceIndex !== -1) {
+                captured = true;
                 newSnapshot.splice(pieceIndex, 1);
             }
             pieceIndex = newSnapshot.indexOf(selected);
@@ -153,11 +147,63 @@ export function setNextSnapshot (newMove) {
             const piece = selected.substring(0, 2);
             newSnapshot.push(piece + newMove);
             
-            dispatch(setSelected(""));
+            specialMoves.forEach(moveArray => {
+                const firstMove = moveArray[0], secondMove = moveArray[1];
+                if (firstMove.substring(4) !== newMove) return;
+                // Castling
+                if (firstMove.charAt(1) === 'K') {
+                    const rookPiece = secondMove.substring(0, 2);
+                    const initalPos = secondMove.substring(2, 4);
+                    const finalPos = secondMove.substring(4);
+                    pieceIndex = newSnapshot.indexOf(rookPiece + initalPos);
+                    newSnapshot.splice(pieceIndex, 1);
+                    newSnapshot.push(rookPiece + finalPos);
+                    if (initalPos.includes("a")) newSnapshotMove = "O-O-O";
+                    else newSnapshotMove = "O-O";
+                    // Promotion
+                } else if (firstMove.charAt(5) !== 8 || firstMove.charAt(5) !== 1) {
+                    pieceIndex = newSnapshot.indexOf(piece + newMove);
+                    newSnapshot.splice(pieceIndex, 1);
+                    newSnapshot.push(promotionPiece + newMove);
+                    newSnapshotMove = selected;
+                    if (captured) newSnapshotMove += "x";
+                    newSnapshotMove += newMove + "=" + promotionPiece.charAt(1);
+                    // Enpassant
+                } else {
+                    pieceIndex = newSnapshot.indexOf(secondMove);
+                    captured = true;
+                    newSnapshot.splice(pieceIndex, 1);
+                }
+            })
+            if (newSnapshotMove === '') {
+                newSnapshotMove = selected;
+                newSnapshotMove += captured ? "x" : "";
+                newSnapshotMove += newMove;
+            }
+            const {firstCheckingPiece, secondCheckingPiece} = isChecked(newSnapshot, turn);
+            if (firstCheckingPiece) {
+                let newCheckedByPieces = 1;
+                let checkingMoves = [...getCheckingMoves(newSnapshot, firstCheckingPiece)];
+                if (secondCheckingPiece) {
+                    newCheckedByPieces++;
+                    checkingMoves = [...checkingMoves, ...getCheckingMoves(newSnapshot, secondCheckingPiece)];
+                }
+                newSnapshotMove += "+";
+                dispatch(setCheck(newCheckedByPieces, checkingMoves));
+            } else if (checkedByPieces > 0) {
+                dispatch(setCheck(0, []));
+            }
+            
+            dispatch(setSelected(''));
             dispatch(setSelectedMoves([]));
-            dispatch(setMove(selected + newMove));
+            dispatch(setPromotionCode(''));
+
+            dispatch(toggleTurn(newTurn));
+            dispatch(setTs());
+            dispatch(setSnapshotMove(newSnapshotMove));
             dispatch(setSnapshot(newSnapshot));
             dispatch(setNextMovableTiles());
+            
         }
     }
 }

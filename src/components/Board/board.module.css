@@ -1,7 +1,9 @@
 .container {
     display: flex;
-    height: 100vh;
     flex-direction: column;
-    align-content: center;
+    align-items: center;
     justify-content: center;
+    width: 67%;
+    height: 100%;
+    outline: 1.5px #cecece solid;
 }

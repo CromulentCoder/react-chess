@@ -2,20 +2,22 @@ import React, { memo } from "react";
 import { connect } from "react-redux";
 import cx from "classnames";
 
-import { setNextSelected, setNextSnapshot, setNextCapturedSnapshot} from "../../redux/actions/game";
+import { setPromotionCode , setNextSelected, setNextSnapshot } from "../../redux/actions/game";
 
-import './tile.css';
+import css from './tile.module.css';
+import ConnectedPromotion from "./promotion";
 
 class Tile extends React.Component {
     constructor(props) {
         super(props);
-        
         this.handleClick = this.handleClick.bind(this);
     }   
 
     handleClick(e) {
         e.preventDefault();
-        if (this.props.selected && this.props.selectedMoves.includes(this.props.code)) {
+        if (!this.props.promotionCode && this.props.selected && this.props.selected.charAt(1) === 'P' && this.props.selectedMoves.includes(this.props.code) && (this.props.code.charAt(1) === '8' || this.props.code.charAt(1) === '1')) {
+            this.props.setPromotionCode(this.props.code);
+        } else if (this.props.selected && !this.props.promotionCode && this.props.selectedMoves.includes(this.props.code)) {
             this.props.setNextSnapshot(this.props.code);
         } else if (this.props.piece && this.props.turn === this.props.piece.charAt(0) && !this.props.selected.includes(this.props.code)) {
             this.props.setNextSelected(this.props.piece, this.props.code);
@@ -23,51 +25,66 @@ class Tile extends React.Component {
     }
 
     render() {
+        const lastMoveTrail = this.props.lastMoveOrigin === this.props.code;
+        const lastMove = this.props.lastMoveDestination === this.props.code;
         const isHighlighted = this.props.selectedMoves.includes(this.props.code);
+        const checked = this.props.checkedByPieces > 0 && this.props.piece === this.props.turn + 'K';
+        const isVisible = this.props.promotionCode === this.props.code;
         let divClass = cx({
-            tile: true,
-            white: this.props.backgroundColor,
-            black: !this.props.backgroundColor,
-            selected: this.props.selected.includes(this.props.code)
+            [css.tile]: true,
+            [css.white]: this.props.backgroundColor,
+            [css.black]: !this.props.backgroundColor,
+            [css.selected]: this.props.selected.includes(this.props.code),
+            [css.checked]: checked,
+            [css.lastMove]: lastMove,
+            [css.lastMoveTrail]: lastMoveTrail
         })
 
         let pieceDiv = cx({
-            ontop: true,
+            [css.ontop]: true,
         })
         let highlightedDivClass = cx({
-            hidden: !isHighlighted,
-            show: isHighlighted,
-            highlightedDiv: !this.props.PieceComponent,
-            caputureable: this.props.PieceComponent
+            [css.hidden]: !isHighlighted,
+            [css.show]: isHighlighted,
+            [css.highlightedDiv]: !this.props.PieceComponent,
+            [css.caputureable]: this.props.PieceComponent
         })
         return (
             <div className= { divClass } onClick = { this.handleClick } id ={this.props.code}>
                 <div className = { pieceDiv }>{ this.props.PieceComponent } </div>
                 <div className = { highlightedDivClass } />
+                {isVisible ? <ConnectedPromotion 
+                code = { this.props.code }
+                /> : ""}
             </div>
         )
     }
 }
 
-const mapStateToProps = (props) => {
-    
-    const { present } = props.game;
+const mapStateToProps = (state) => {
+    const { game } = state;
 
-    const { turn, selected, moves, selectedMoves, snapshot, checkBy, checkTo } = present;
+    const { present } = game;
 
+    const { turn, selected, selectedMoves, checkedByPieces, snapshot, promotionCode, snapshotMove } = present;
+
+    let lastMoveOrigin = snapshotMove?.substring(2, 4); 
+    let lastMoveDestination = snapshotMove?.substring(4);
     return {
-    turn: turn,
-    selected: selected,
-    moves: moves,
-    selectedMoves: selectedMoves,
-    snapshot: snapshot,
-    checkTo: checkTo,
-    checkBy: checkBy,
+    turn,
+    selected,
+    selectedMoves,
+    snapshot,
+    checkedByPieces,
+    promotionCode,
+    lastMoveOrigin,
+    lastMoveDestination
     }
 }
 
 
 const mapDispatchToProps = {
+    setPromotionCode,
     setNextSelected, 
     setNextSnapshot
 }

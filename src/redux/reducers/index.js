@@ -1,12 +1,12 @@
 import { combineReducers } from 'redux'
-import undoable, { ActionTypes, excludeAction } from 'redux-undo'
-import { TOGGLE_TURN, SET_MOVABLE_TILES, SET_SELECTED, SET_SELECTED_MOVES } from '../actions'
+import undoable, { includeAction } from 'redux-undo'
 import game from './game'
+import { TOGGLE_TURN } from '../actions'
 
 export default combineReducers({
     game: undoable(game, {
         limit: false,
-        undoType: ActionTypes.UNDO,
-        filter: excludeAction([TOGGLE_TURN, SET_MOVABLE_TILES, SET_SELECTED, SET_SELECTED_MOVES])
+        filter: includeAction(TOGGLE_TURN),
+        syncFilter: true,
     })
 })

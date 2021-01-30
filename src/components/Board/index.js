@@ -2,15 +2,14 @@ import { memo } from "react";
 import { connect } from "react-redux";
 
 import ConnectedRank from "../Rank"
+import {FILES, RANKS} from "../../constants";
 import css from './board.module.css';
 
 import { setNextMovableTiles } from "../../redux/actions/game";
 
 const Board = (props) => {
-    const {
-        ranks,
-        files,
-    } = props;
+    const ranks = RANKS;
+    const files = FILES;
 
     let backgroundColor = true;
     props.setNextMovableTiles();
@@ -19,32 +18,19 @@ const Board = (props) => {
             {ranks.map(rank => {
                 const bg = backgroundColor;
                 backgroundColor = !backgroundColor;
-                return (
-                    <ConnectedRank
+                return <ConnectedRank
                         key = {rank}
                         rankName = {rank}
                         files = {files}
                         backgroundColor = {bg}
                     />
-                )
             })}
         </div>
     )
 }
 
-const mapStateToProps = (state) => {
-    // const { isDoingMatch } = general
-    // console.log(state);
-    const { present } = state.game
-    const { ranks, files } = present
-    return {
-        ranks,
-        files
-    }
-};
-
 const ConnectBoard = connect(
-    mapStateToProps,
+    null,
     { setNextMovableTiles }
 )(memo(Board))
 

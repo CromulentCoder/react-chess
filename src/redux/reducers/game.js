@@ -1,41 +1,27 @@
 import * as types from '../actions';
-
-import {FILES, RANKS} from "../../constants";
+import { INITIAL_SNAPSHOT } from "../../constants";
 
 // prettier-ignore
 const initialState = {
     timestamp: +new Date(),
-    turn: '',
-    selected: '',
+    turn: 'w',
     moves: [],
-    move: '',
+    specialMoves: [],
+    selected: '',
     selectedMoves: [],
-    snapshot: [
-        'bRa8', 'bNb8', 'bBc8', 'bQd8', 'bKe8', 'bBf8', 'bNg8', 'bRh8',
-        'bPa7', 'bPb7', 'bPc7', 'bPd7', 'bPe7', 'bPf7', 'bPg7', 'bPh7',
-        'wPa2', 'wPb2', 'wPc2', 'wPd2', 'wPe2', 'wPf2', 'wPg2', 'wPh2',
-        'wRa1', 'wNb1', 'wBc1', 'wQd1', 'wKe1', 'wBf1', 'wNg1', 'wRh1'
-    ],
-    checkTo: '',
-    checkBy: '',
-    ranks: RANKS,
-    files: FILES
+    checkedByPieces: 0,
+    snapshot: INITIAL_SNAPSHOT,
+    snapshotMove: '',
+    promotionCode: ''
 }
 
 function game (state = initialState, action = {}) {
     const { type, payload } = action
-    // console.log("Type:", type, "Payload:", payload);
+    console.log(type, payload);
     switch (type) {
         case types.SET_TS: {
             return {
                 ...state,
-                timestamp: payload
-            }
-        }
-
-        case types.RESTART_GAME: {
-            return {
-                ...initialState,
                 timestamp: payload
             }
         }
@@ -47,13 +33,6 @@ function game (state = initialState, action = {}) {
             }
         }
 
-        case types.SET_SELECTED: {
-            return {
-                ...state,
-                selected: payload
-            }
-        }
-
         case types.SET_MOVABLE_TILES: {
             return {
                 ...state,
@@ -61,17 +40,45 @@ function game (state = initialState, action = {}) {
             }
         }
 
-        case types.SET_MOVE: {
+        case types.SET_SPECIAL_MOVABLE_TILES: {
             return {
-                ...state, 
-                move: payload
+                ...state,
+                specialMoves: payload
             }
         }
 
+        case types.SET_SELECTED: {
+            return {
+                ...state,
+                selected: payload
+            }
+        }
+        
         case types.SET_SELECTED_MOVES: {
             return {
                 ...state,
                 selectedMoves: payload
+            }
+        }
+
+        case types.SET_PROMOTION_CODE: {
+            return {
+                ...state,
+                promotionCode: payload
+            }
+        }
+
+        case types.SET_IS_CHECKED: {
+            return {
+                ...state,
+                checkedByPieces: payload
+            }
+        }
+
+        case types.SET_CHECKING_MOVES: {
+            return {
+                ...state,
+                checkingMoves: payload
             }
         }
 
@@ -82,17 +89,16 @@ function game (state = initialState, action = {}) {
             }
         }
 
-        case types.SET_CHECK_TO: {
+        case types.SET_SNAPSHOT_MOVE: {
             return {
-                ...state,
-                checkTo: payload
+                ...state, 
+                snapshotMove: payload
             }
         }
 
-        case types.SET_CHECK_BY: {
+        case types.RESET: {
             return {
-                ...state,
-                checkBy: payload
+                ...initialState
             }
         }
 

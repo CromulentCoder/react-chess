@@ -45,6 +45,13 @@ export const INITIAL_POSITION = {
     bP : ['a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7']
 }
 
+export const INITIAL_SNAPSHOT = [
+    'bRa8', 'bNb8', 'bBc8', 'bQd8', 'bKe8', 'bBf8', 'bNg8', 'bRh8',
+    'bPa7', 'bPb7', 'bPc7', 'bPd7', 'bPe7', 'bPf7', 'bPg7', 'bPh7',
+    'wPa2', 'wPb2', 'wPc2', 'wPd2', 'wPe2', 'wPf2', 'wPg2', 'wPh2',
+    'wRa1', 'wNb1', 'wBc1', 'wQd1', 'wKe1', 'wBf1', 'wNg1', 'wRh1'
+]
+
 export const MOVEMENTS = {
     B: {
         DOWNRIGHT: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [7, 7]],
@@ -79,10 +86,16 @@ export const MOVEMENTS = {
     }
 }
 
-export const SPECIAL_MOVES = {
-    K: ['shortCastle', 'longCastle'],
-    P: ['doubleStep', 'enPassant']
+export const MOVEMENT_TYPE = {
+    B: ['diagonal'],
+    K: ['single'],
+    N: ['single'],
+    P: ['single'],
+    Q: ['diagonal', 'straight'],
+    R: ['straight']
 }
+
+export const SPECIAL_MOVES = ['castling', 'enpassant']
 
 export const SPECIAL_MOVEMENTS = {
     shortCastle : {
@@ -93,10 +106,7 @@ export const SPECIAL_MOVEMENTS = {
         K : [[0, -2]],
         R : [[0, 3]]
     },
-    doubleStep : {
-        P : [[2, 0]]
-    },
-    enPassant : {
+    enpassant : {
         P : [[1, -1], [1, 1]]
     }
 }
