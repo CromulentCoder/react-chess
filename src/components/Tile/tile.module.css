@@ -104,3 +104,10 @@
 .positionBottom {
     transform: translate( 50%, 10%);
 }
+
+@media only screen and (max-width: 1000px) {
+    .tile {
+        width: min(11vw, 11vh);
+        height: min(11vw, 11vh);
+    }
+}

@@ -4,7 +4,7 @@ import ConnectedMovesHistory from './components/MovesHistory';
 import ConnectedSettings from './components/Settings';
 
 function App() {
-    return (
+    return ( 
         <div className = {css.container}>
             <ConnectedSettings />
             <ConnectBoard />
