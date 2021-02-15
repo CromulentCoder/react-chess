@@ -25,7 +25,6 @@ function longCastle(snapshot, prevMoves, pieceColor) {
                 return destinationCode === currCode
             })
             if (indexPrevMove !== -1) {
-                console.log(prevMoves[indexPrevMove]);
                 return moves;            
             }
         }
@@ -94,14 +93,27 @@ export function getCastling(snapshot, pieceColor, prevMoves) {
     const rooks = snapshot.filter(code => code.includes(rookPiece));
     const rookFirst = rooks[0] || null;
     const rookSecond = rooks[1] || null;
-    if (rookFirst && INITIAL_POSITION[rookPiece].includes(rookFirst.substring(2,4))) {
-        if (rookFirst.charAt(2) === 'a') moves = [...moves, ...shortCastle(snapshot, prevMoves, pieceColor)];
-        else if (rookFirst.charAt(2) === 'h') moves = [...moves, ...longCastle(snapshot, prevMoves, pieceColor)];
-    } 
-    if (rookSecond && INITIAL_POSITION[rookPiece].includes(rookSecond.substring(2,4))) {
-        if (rookSecond.charAt(2) === 'a') moves = [...moves, ...shortCastle(snapshot, prevMoves, pieceColor)];
-        else if (rookSecond.charAt(2) === 'h') moves = [...moves, ...longCastle(snapshot, prevMoves, pieceColor)];
-    }
+    if (pieceColor === 'w') {
+        if (rookFirst && INITIAL_POSITION[rookPiece].includes(rookFirst.substring(2,4))) {
+            if (rookFirst.charAt(2) === 'a') moves = [...moves, ...shortCastle(snapshot, prevMoves, pieceColor)];
+            else if (rookFirst.charAt(2) === 'h') moves = [...moves, ...longCastle(snapshot, prevMoves, pieceColor)];
+        } 
+        if (rookSecond && INITIAL_POSITION[rookPiece].includes(rookSecond.substring(2,4))) {
+            if (rookSecond.charAt(2) === 'a') moves = [...moves, ...shortCastle(snapshot, prevMoves, pieceColor)];
+            else if (rookSecond.charAt(2) === 'h') moves = [...moves, ...longCastle(snapshot, prevMoves, pieceColor)];
+        }
+    } else {
+        if (rookFirst && INITIAL_POSITION[rookPiece].includes(rookFirst.substring(2,4))) {
+            if (rookFirst.charAt(2) === 'h') moves = [...moves, ...shortCastle(snapshot, prevMoves, pieceColor)];
+            else if (rookFirst.charAt(2) === 'a') moves = [...moves, ...longCastle(snapshot, prevMoves, pieceColor)];
+        } 
+        if (rookSecond && INITIAL_POSITION[rookPiece].includes(rookSecond.substring(2,4))) {
+            if (rookSecond.charAt(2) === 'h') moves = [...moves, ...shortCastle(snapshot, prevMoves, pieceColor)];
+            else if (rookSecond.charAt(2) === 'a') moves = [...moves, ...longCastle(snapshot, prevMoves, pieceColor)];
+        }
+    }   
+    
+    
     return moves;
 }
 

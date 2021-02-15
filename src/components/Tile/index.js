@@ -51,11 +51,9 @@ class Tile extends React.Component {
         })
         return (
             <div className= { divClass } onClick = { this.handleClick } id ={this.props.code}>
-                <div className = { pieceDiv }>{ this.props.PieceComponent } </div>
+                { this.props.PieceComponent ? <div className = { pieceDiv }>{ this.props.PieceComponent } </div> : "" }
                 <div className = { highlightedDivClass } />
-                {isVisible ? <ConnectedPromotion 
-                code = { this.props.code }
-                /> : ""}
+                {isVisible ? <ConnectedPromotion code = { this.props.code } /> : ""}
             </div>
         )
     }

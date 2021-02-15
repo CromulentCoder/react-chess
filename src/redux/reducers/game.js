@@ -12,12 +12,12 @@ const initialState = {
     checkedByPieces: 0,
     snapshot: INITIAL_SNAPSHOT,
     snapshotMove: '',
-    promotionCode: ''
+    promotionCode: '',
+    kingMoved: [false, false]
 }
 
 function game (state = initialState, action = {}) {
     const { type, payload } = action
-    console.log(type, payload);
     switch (type) {
         case types.SET_TS: {
             return {
@@ -79,6 +79,13 @@ function game (state = initialState, action = {}) {
             return {
                 ...state,
                 checkingMoves: payload
+            }
+        }
+
+        case types.SET_KING_MOVED: {
+            return {
+                ...state,
+                kingMoved: payload
             }
         }
 

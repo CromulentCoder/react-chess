@@ -60,6 +60,13 @@ export function setCheckingMoves (checkingMoves = []) {
     }
 }
 
+export function setKingMoved( hasKingMoved = [false, false]) {
+    return {
+        type: types.SET_KING_MOVED,
+        payload: hasKingMoved
+    }
+}
+
 export function setPromotionCode(code) {
     return {
         type: types.SET_PROMOTION_CODE,
@@ -94,8 +101,9 @@ export function setNextMovableTiles() {
         
         const { present, past } = game;
         const { moves } = past[past.length - 1] || [];
-        const { turn, checkedByPieces, checkingMoves, snapshot, snapshotMove } = present || {};
-        const { moves: newMoves, specialMoves } = getMoves(snapshot, turn, moves, snapshotMove, checkedByPieces, checkingMoves);
+        const { turn, checkedByPieces, checkingMoves, snapshot, snapshotMove, kingMoved } = present || {};
+        const hasKingMoved = turn === 'w' ? kingMoved[0] : kingMoved[1];
+        const { moves: newMoves, specialMoves } = getMoves(snapshot, turn, moves, snapshotMove, checkedByPieces, checkingMoves, hasKingMoved);
 
         dispatch(setMovable(newMoves));
         dispatch(setSpecialMovable(specialMoves));
@@ -130,7 +138,7 @@ export function setNextSnapshot (newMove, promotionPiece = '') {
         const { game } = getState();
         const { present } = game;
 
-        const { snapshot, selected, turn, selectedMoves, checkedByPieces, specialMoves } = present;
+        const { snapshot, selected, turn, selectedMoves, checkedByPieces, specialMoves, kingMoved } = present;
 
         let newSnapshot = [...snapshot];
         let newTurn = turn === 'w' ? 'b' : 'w';
@@ -161,7 +169,7 @@ export function setNextSnapshot (newMove, promotionPiece = '') {
                     if (initalPos.includes("a")) newSnapshotMove = "O-O-O";
                     else newSnapshotMove = "O-O";
                     // Promotion
-                } else if (firstMove.charAt(5) !== 8 || firstMove.charAt(5) !== 1) {
+                } else if (firstMove === secondMove) {
                     pieceIndex = newSnapshot.indexOf(piece + newMove);
                     newSnapshot.splice(pieceIndex, 1);
                     newSnapshot.push(promotionPiece + newMove);
@@ -192,6 +200,11 @@ export function setNextSnapshot (newMove, promotionPiece = '') {
                 dispatch(setCheck(newCheckedByPieces, checkingMoves));
             } else if (checkedByPieces > 0) {
                 dispatch(setCheck(0, []));
+            }
+
+            if (selected.charAt(1) === 'K') {
+                if (turn === 'w') dispatch(setKingMoved([true, kingMoved[1]]));
+                else dispatch(setKingMoved([kingMoved[0], true]))
             }
             
             dispatch(setSelected(''));

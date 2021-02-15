@@ -9,7 +9,7 @@ export default function isChecked(newSnapshot, turn) {
     const oldPieceColor = turn;
     const pieceColor = oldPieceColor === 'w' ? 'b' : 'w';
     const kingCode = newSnapshot.find(code => code.includes(pieceColor + 'K')).substring(2);
-    const { moves : movesPossibleWithNewSnapshot } = getMoves(newSnapshot, oldPieceColor, [], '', false, [], false);
+    const { moves : movesPossibleWithNewSnapshot } = getMoves(newSnapshot, oldPieceColor, [], '', false, [], false, false);
     movesPossibleWithNewSnapshot.forEach(move => {
         const moveDestinationCode = move.substring(4);
         if (moveDestinationCode === kingCode) {

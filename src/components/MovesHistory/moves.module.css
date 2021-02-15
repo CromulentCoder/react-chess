@@ -45,6 +45,7 @@
 .button:hover {
     inset: 2px;
     opacity: 0.7;
+    cursor: pointer;
 }
 
 .white {
@@ -76,6 +77,10 @@
     justify-content: center;
     width: 50%;
     height: 30%;
+}
+
+.arrow:hover {
+    cursor: pointer;
 }
 
 .arrow svg {
