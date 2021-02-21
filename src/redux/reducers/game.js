@@ -12,8 +12,10 @@ const initialState = {
     checkedByPieces: 0,
     snapshot: INITIAL_SNAPSHOT,
     snapshotMove: '',
+    captured: false,
     promotionCode: '',
-    kingMoved: [false, false]
+    kingMoved: [false, false],
+    coords: true
 }
 
 function game (state = initialState, action = {}) {
@@ -75,13 +77,6 @@ function game (state = initialState, action = {}) {
             }
         }
 
-        case types.SET_CHECKING_MOVES: {
-            return {
-                ...state,
-                checkingMoves: payload
-            }
-        }
-
         case types.SET_KING_MOVED: {
             return {
                 ...state,
@@ -100,6 +95,13 @@ function game (state = initialState, action = {}) {
             return {
                 ...state, 
                 snapshotMove: payload
+            }
+        }
+
+        case types.SET_CAPTURED: {
+            return {
+                ...state,
+                captured: payload
             }
         }
 

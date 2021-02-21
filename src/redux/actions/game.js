@@ -2,7 +2,7 @@ import * as types from "./"
 
 import getMoves from "../../core/getMoves";
 
-import isChecked, { getCheckingMoves } from "../../core/isChecked";
+import isChecked from "../../core/isChecked";
 
 export function setTs (ts = +new Date()) {
     return {
@@ -11,10 +11,10 @@ export function setTs (ts = +new Date()) {
     }
 }
 
-export function setSelected (code = '') {
+export function toggleTurn (turn) {
     return {
-        type: types.SET_SELECTED,
-        payload: code
+        type: types.TOGGLE_TURN,
+        payload: turn
     }
 }
 
@@ -32,6 +32,13 @@ export function setSpecialMovable (moves = []) {
     }
 }
 
+export function setSelected (code = '') {
+    return {
+        type: types.SET_SELECTED,
+        payload: code
+    }
+}
+
 export function setSelectedMoves (possibleMoves = []) {
     return {
         type: types.SET_SELECTED_MOVES,
@@ -39,24 +46,10 @@ export function setSelectedMoves (possibleMoves = []) {
     }
 }
 
-export function toggleTurn (turn) {
-    return {
-        type: types.TOGGLE_TURN,
-        payload: turn
-    }
-}
-
 export function setCheckedByPieces (checkedByPieces = 0) {
     return {
         type: types.SET_IS_CHECKED,
         payload: checkedByPieces
-    }
-}
-
-export function setCheckingMoves (checkingMoves = []) {
-    return {
-        type: types.SET_CHECKING_MOVES,
-        payload: checkingMoves
     }
 }
 
@@ -88,10 +81,10 @@ export function setSnapshotMove (move = '') {
     }
 }
 
-export function setCheck (checkedByPieces, checkingMoves) {
-    return (dispatch) => {        
-        dispatch(setCheckedByPieces(checkedByPieces));
-        dispatch(setCheckingMoves(checkingMoves));
+export function setCaptured (captured) {
+    return {
+        type: types.SET_CAPTURED,
+        payload: captured
     }
 }
 
@@ -101,9 +94,9 @@ export function setNextMovableTiles() {
         
         const { present, past } = game;
         const { moves } = past[past.length - 1] || [];
-        const { turn, checkedByPieces, checkingMoves, snapshot, snapshotMove, kingMoved } = present || {};
+        const { turn, checkedByPieces, snapshot, snapshotMove, kingMoved } = present || {};
         const hasKingMoved = turn === 'w' ? kingMoved[0] : kingMoved[1];
-        const { moves: newMoves, specialMoves } = getMoves(snapshot, turn, moves, snapshotMove, checkedByPieces, checkingMoves, hasKingMoved);
+        let { moves: newMoves, specialMoves } = getMoves(snapshot, turn, moves, snapshotMove, checkedByPieces, hasKingMoved);
 
         dispatch(setMovable(newMoves));
         dispatch(setSpecialMovable(specialMoves));
@@ -140,83 +133,91 @@ export function setNextSnapshot (newMove, promotionPiece = '') {
 
         const { snapshot, selected, turn, selectedMoves, checkedByPieces, specialMoves, kingMoved } = present;
 
+        // Return if not no selected or not turn or not a possible move
+        if (!selected || !selected.charAt(0) === turn || selectedMoves.indexOf(newMove) === -1) return;
+        
         let newSnapshot = [...snapshot];
         let newTurn = turn === 'w' ? 'b' : 'w';
         let newSnapshotMove = '';
-        if (selected && selected.charAt(0) === turn && selectedMoves.indexOf(newMove) !== -1) {
-            let pieceIndex = newSnapshot.findIndex(code => code.includes(newMove));
-            let captured = false;
-            if (pieceIndex !== -1) {
+        let captured = false;
+        let pieceIndex = newSnapshot.findIndex(code => code.includes(newMove));
+
+        // Check if piece is captured and remove it from board
+        if (pieceIndex !== -1) {
+            captured = true;
+            newSnapshot.splice(pieceIndex, 1);
+        }
+
+        // Remove the selected piece from old position and add in new position
+        pieceIndex = newSnapshot.indexOf(selected);
+        newSnapshot.splice(pieceIndex, 1);
+        const piece = selected.substring(0, 2);
+        newSnapshot.push(piece + newMove);
+        
+        // Check if move is a special move (castling, promotion, enpassant)
+        specialMoves.forEach(moveArray => {
+            const firstMove = moveArray[0], secondMove = moveArray[1];
+            if (firstMove.substring(4) !== newMove) return;
+
+            if (firstMove.charAt(1) === 'K') { // Check if its castling move
+                const rookPiece = secondMove.substring(0, 2);
+                const initalPos = secondMove.substring(2, 4);
+                const finalPos = secondMove.substring(4);
+
+                // Remove selected rook from old position and add in new position
+                pieceIndex = newSnapshot.indexOf(rookPiece + initalPos);
+                newSnapshot.splice(pieceIndex, 1);
+                newSnapshot.push(rookPiece + finalPos);
+
+                if (initalPos.includes("a")) newSnapshotMove = "O-O-O";
+                else newSnapshotMove = "O-O";
+            } else if (firstMove === secondMove) { // Check if its promotion move
+
+                // Replace pawn with promoted piece
+                pieceIndex = newSnapshot.indexOf(piece + newMove);
+                newSnapshot.splice(pieceIndex, 1);
+                newSnapshot.push(promotionPiece + newMove);
+
+                newSnapshotMove = selected + newMove + "=" + promotionPiece.charAt(1);
+            } else { // Check if its enpassant move
+                
+                // Remove captured pawn 
+                pieceIndex = newSnapshot.indexOf(secondMove);
                 captured = true;
                 newSnapshot.splice(pieceIndex, 1);
             }
-            pieceIndex = newSnapshot.indexOf(selected);
-            newSnapshot.splice(pieceIndex, 1);
-            const piece = selected.substring(0, 2);
-            newSnapshot.push(piece + newMove);
-            
-            specialMoves.forEach(moveArray => {
-                const firstMove = moveArray[0], secondMove = moveArray[1];
-                if (firstMove.substring(4) !== newMove) return;
-                // Castling
-                if (firstMove.charAt(1) === 'K') {
-                    const rookPiece = secondMove.substring(0, 2);
-                    const initalPos = secondMove.substring(2, 4);
-                    const finalPos = secondMove.substring(4);
-                    pieceIndex = newSnapshot.indexOf(rookPiece + initalPos);
-                    newSnapshot.splice(pieceIndex, 1);
-                    newSnapshot.push(rookPiece + finalPos);
-                    if (initalPos.includes("a")) newSnapshotMove = "O-O-O";
-                    else newSnapshotMove = "O-O";
-                    // Promotion
-                } else if (firstMove === secondMove) {
-                    pieceIndex = newSnapshot.indexOf(piece + newMove);
-                    newSnapshot.splice(pieceIndex, 1);
-                    newSnapshot.push(promotionPiece + newMove);
-                    newSnapshotMove = selected;
-                    if (captured) newSnapshotMove += "x";
-                    newSnapshotMove += newMove + "=" + promotionPiece.charAt(1);
-                    // Enpassant
-                } else {
-                    pieceIndex = newSnapshot.indexOf(secondMove);
-                    captured = true;
-                    newSnapshot.splice(pieceIndex, 1);
-                }
-            })
-            if (newSnapshotMove === '') {
-                newSnapshotMove = selected;
-                newSnapshotMove += captured ? "x" : "";
-                newSnapshotMove += newMove;
-            }
-            const {firstCheckingPiece, secondCheckingPiece} = isChecked(newSnapshot, turn);
-            if (firstCheckingPiece) {
-                let newCheckedByPieces = 1;
-                let checkingMoves = [...getCheckingMoves(newSnapshot, firstCheckingPiece)];
-                if (secondCheckingPiece) {
-                    newCheckedByPieces++;
-                    checkingMoves = [...checkingMoves, ...getCheckingMoves(newSnapshot, secondCheckingPiece)];
-                }
-                newSnapshotMove += "+";
-                dispatch(setCheck(newCheckedByPieces, checkingMoves));
-            } else if (checkedByPieces > 0) {
-                dispatch(setCheck(0, []));
-            }
-
-            if (selected.charAt(1) === 'K') {
-                if (turn === 'w') dispatch(setKingMoved([true, kingMoved[1]]));
-                else dispatch(setKingMoved([kingMoved[0], true]))
-            }
-            
-            dispatch(setSelected(''));
-            dispatch(setSelectedMoves([]));
-            dispatch(setPromotionCode(''));
-
-            dispatch(toggleTurn(newTurn));
-            dispatch(setTs());
-            dispatch(setSnapshotMove(newSnapshotMove));
-            dispatch(setSnapshot(newSnapshot));
-            dispatch(setNextMovableTiles());
-            
+        })
+        if (newSnapshotMove === '') {
+            newSnapshotMove = selected;
+            newSnapshotMove += newMove;
         }
+
+        // Check if checked
+        const {firstCheckingPiece, secondCheckingPiece} = isChecked(newSnapshot, turn);
+        if (firstCheckingPiece) {
+            let newCheckedByPieces = 1;
+            if (secondCheckingPiece) {
+                newCheckedByPieces++;
+            }
+            dispatch(setCheckedByPieces(newCheckedByPieces))        
+        } else if (checkedByPieces > 0) { // Clear check from previous turn if checked
+            dispatch(setCheckedByPieces(0));
+        }
+
+        if (selected.charAt(1) === 'K') { // Check if its a king move
+            if (turn === 'w') dispatch(setKingMoved([true, kingMoved[1]]));
+            else dispatch(setKingMoved([kingMoved[0], true]))
+        }
+        
+        dispatch(setSelected(''));
+        dispatch(setSelectedMoves([]));
+        if (promotionPiece !== '') dispatch(setPromotionCode(''));
+
+        dispatch(toggleTurn(newTurn));
+        dispatch(setTs());
+        dispatch(setSnapshot(newSnapshot));
+        dispatch(setSnapshotMove(newSnapshotMove));
+        dispatch(setCaptured(captured));
+        dispatch(setNextMovableTiles());
     }
 }

@@ -50,41 +50,53 @@ const MovesHistory = (props) => {
 const mapStateToProps = (state) => {
     const { game } = state;
     const { past, future, present } = game;
-    let { snapshotMove : currMove, moves, checkedByPieces } = present;
+    let { snapshotMove : currSnapshotMove, moves, checkedByPieces : currCheckedByPieces, captured: currCaptured } = present;
 
     let pastMoveList = [];
-    past.forEach( (obj, index) => {
-        let { snapshotMove } = obj;
+    past.forEach( (pastState, index) => {
+        let { snapshotMove, captured, checkedByPieces } = pastState;
         if (snapshotMove.charAt(1) === 'P') {
-            if (snapshotMove.indexOf('x') !== -1) snapshotMove = snapshotMove.charAt(2) + snapshotMove.substring(4);
-            else snapshotMove = snapshotMove.substring(4);
-        } else if (snapshotMove.charAt(0) !== 'O') snapshotMove = snapshotMove.charAt(1) + snapshotMove.substring(4);
+            snapshotMove = snapshotMove.substring(2);
+            if (captured) snapshotMove = snapshotMove.slice(0, 2) + 'x' + snapshotMove.slice(2);
+        } else if (snapshotMove !== "O-O" && snapshotMove !== "O-O-O") {
+            snapshotMove = snapshotMove.slice(1, 2) + snapshotMove.slice(4, 6);
+            if (captured) snapshotMove = snapshotMove.slice(0, 1) + 'x' + snapshotMove.slice(1, 3);
+        }
+        if (checkedByPieces > 0) snapshotMove += '+';
         pastMoveList.push({
             index, snapshotMove, "past": true, key: index
         });
     });
 
-    if (currMove.charAt(1) === 'P') {
-        if (currMove.indexOf('x') !== -1) currMove = currMove.charAt(2) + currMove.substring(4);
-        else currMove = currMove.substring(4);
-    } else if (currMove.charAt(0) !== 'O') currMove = currMove.charAt(1) + currMove.substring(4);
+    if (currSnapshotMove.charAt(1) === 'P') {
+        currSnapshotMove = currSnapshotMove.substring(2);
+        if (currCaptured) currSnapshotMove = currSnapshotMove.slice(0, 2) + 'x' + currSnapshotMove.slice(2);
+    } else if (currSnapshotMove !== "O-O" && currSnapshotMove !== "O-O-O") {
+        currSnapshotMove = currSnapshotMove.slice(1, 2) + currSnapshotMove.slice(4, 6);
+        if (currCaptured) currSnapshotMove = currSnapshotMove.slice(0, 1) + 'x' + currSnapshotMove.slice(1, 3);
+    }
+    if (currCheckedByPieces > 0) currSnapshotMove += '+';
 
     let futureMoveList = [];
-    future.forEach( (obj, index) => {
-        let { snapshotMove } = obj;
+    future.forEach( (futureState, index) => {
+        let { snapshotMove, captured, checkedByPieces } = futureState;
         if (snapshotMove.charAt(1) === 'P') {
-            if (snapshotMove.indexOf('x') !== -1) snapshotMove = snapshotMove.charAt(1) + snapshotMove.substring(4);
-            else snapshotMove = snapshotMove.substring(4);
-        } else if (snapshotMove.charAt(0) !== 'O') snapshotMove = snapshotMove.charAt(1) + snapshotMove.substring(4);
+            snapshotMove = snapshotMove.substring(2);
+            if (captured) snapshotMove = snapshotMove.slice(0, 2) + 'x' + snapshotMove.slice(2);
+        } else if (snapshotMove !== "O-O" && snapshotMove !== "O-O-O") {
+            snapshotMove = snapshotMove.slice(1, 2) + snapshotMove.slice(4, 6);
+            if (captured) snapshotMove = snapshotMove.slice(0, 1) + 'x' + snapshotMove.slice(1, 3);
+        }
+        if (checkedByPieces > 0) snapshotMove += '+';
         futureMoveList.push({
             index: index, snapshotMove, past: false, key: pastMoveList.length + 1 + index
         });
     });
 
     let moveList = [];
-    moveList = [...pastMoveList, { index: -1, snapshotMove: currMove, key: pastMoveList.length }, ...futureMoveList];
+    moveList = [...pastMoveList, { index: -1, snapshotMove: currSnapshotMove, key: pastMoveList.length }, ...futureMoveList];
     
-    if (moves.length === 0 && checkedByPieces > 0) {
+    if (moves.length === 0 && currCheckedByPieces > 0) {
         let move = moveList[moveList.length - 1]["snapshotMove"];
         move = move.substring(0, move.length - 1) + "#";
         moveList[moveList.length - 1]["snapshotMove"] = move;

@@ -1,13 +1,4 @@
-import * as types from "./";
-
 import { ActionCreators } from "redux-undo";
-import { setNextMovableTiles } from "./game";
-
-export function setReset() {
-    return {
-        type: types.RESET
-    }
-}
 
 export function undoSnapshot() {
     return (dispatch, getState) => {
@@ -24,14 +15,6 @@ export function redoSnapshot() {
         const { game } = getState();
         const { future } = game;
         if(future.length > 0) dispatch(ActionCreators.jumpToFuture(0));
-    }
-}
-
-export function reset() {
-    return (dispatch) => {
-        dispatch(ActionCreators.clearHistory());
-        dispatch(setReset());
-        dispatch(setNextMovableTiles());
     }
 }
 

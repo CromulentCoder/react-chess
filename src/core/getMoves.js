@@ -6,8 +6,8 @@ import tileToCode from "./tileToCode";
 import isChecked from "./isChecked";
 import { getCastling, getEnpassant, getPromotion } from "./specialMoves";
 
-function getGenericMovesFromObj(movementsObj, snapshot, piece) {
-    if (!movementsObj || !snapshot || !piece) return [];
+export function getPieceMoves(movements, snapshot, piece) {
+    if (!movements || !snapshot || !piece) return [];
     let moves = [];
     const pieceColor = piece.charAt(0);
     
@@ -19,96 +19,39 @@ function getGenericMovesFromObj(movementsObj, snapshot, piece) {
         const { row, col } = currCode ? codeToTile(currCode) : "";
 
         if (row === undefined || col === undefined) return moves;
-        for (const movementsDir in movementsObj) {
-            const movements = movementsObj[movementsDir];
-            movements.every(movement => {
+        movements.forEach(movementsDir => {
+            let index = 0;
+            while(index < movementsDir.length) {
+                const movement = movementsDir[index++];
                 const x = movement[0];
                 const y = movement[1];
                 const newRow = row + x;
                 const newCol = col + y;
+
                 // Check if new coords are inbound
-                if (inbound(newRow, newCol)) {
-                    // Get the chess code
-                    const newCode = tileToCode(newRow, newCol);
-                    // Check if space is occupied by same colored piece
-                    const indexSameColor = snapshot.findIndex(code => 
-                        code.charAt(0) === pieceColor && code.includes(newCode));
-                    if (indexSameColor !== -1) return false;
-                    const move = piece + currCode + newCode;
-                    moves.push(move);
-                    if (snapshot.findIndex(code => code.includes(newCode)) !== -1) return false;
-                }
-                return true;
-            })
-        }
-    });
-    return moves;
-}
-
-function getGenericMovesFromArray(movements, snapshot, piece, prevMoves = []) {
-    if (!movements || !snapshot || !piece) return [];
-    let moves = [];
-    const pieceColor = piece.charAt(0);
-    const pieceType = piece.charAt(1);
-    
-    const pieceCodeArray = snapshot.filter(code => code.includes(piece));
-    pieceCodeArray.forEach(pieceCode => {
-        const currCode = pieceCode ? pieceCode.substring(2) : "";
-
-        const { row, col } = currCode ? codeToTile(currCode) : "";
-
-        if (row === undefined || col === undefined) return moves;
-        
-        movements.forEach(movement => {
-            let x = movement[0];
-            let y = movement[1];
-            if (piece === 'wP') x *= -1;
-            const newRow = row + x;
-            const newCol = col + y;
-            // Check if new coords are inbound
-            if (inbound(newRow, newCol)) {
+                if (!inbound(newRow, newCol)) break;
+                
                 // Get the chess code
                 const newCode = tileToCode(newRow, newCol);
-
-                // Check if space is occupied by same colored piece
-                const indexSameColor = snapshot.findIndex(code => code.includes(pieceColor) && code.includes(newCode));
-                if (indexSameColor !== -1) return;   
                 
-                // If piece is pawn and snapshot has a piece on the new move or it's promotion move then return
-                if (pieceType === 'P' && 
-                ((snapshot.findIndex(code => code.includes(newCode)) !== -1) ||
-                newCode.charAt(1) === '1' || newCode.charAt(1) === '8'))return;
+                // Check if space is occupied by same colored piece
+                const indexSameColor = snapshot.findIndex(code => 
+                    code.charAt(0) === pieceColor && code.includes(newCode));
+                if (indexSameColor !== -1) break;
 
+                // Add move
                 const move = piece + currCode + newCode;
                 moves.push(move);
+
+                // If it's a capture move break
+                if (snapshot.findIndex(code => code.includes(newCode)) !== -1) break;
             }
         })
     });
     return moves;
 }
 
-export function getKingMoves(movements, snapshot, pieceColor, prevMoves) {
-    return getGenericMovesFromArray(movements, snapshot, pieceColor + 'K', prevMoves);
-}
-
-export function getQueenMoves(movementsObj, snapshot, pieceColor) {
-    return getGenericMovesFromObj(movementsObj, snapshot, pieceColor + 'Q');
-}
-
-export function getBishopMoves(movementsObj, snapshot, pieceColor) {
-    return getGenericMovesFromObj(movementsObj, snapshot, pieceColor + 'B');
-}
-
-export function getKnightMoves(movements, snapshot, pieceColor) {
-    return getGenericMovesFromArray(movements, snapshot, pieceColor + 'N');
-}
-
-export function getRookMoves(movementsObj, snapshot, pieceColor) {
-    return getGenericMovesFromObj(movementsObj, snapshot, pieceColor + 'R');
-}
-
-export function getPawnMoves(movements, snapshot, pieceColor) {
-    // Will take last move to check for enpassant
+export function getPawnMoves(snapshot, pieceColor) {
     const piece = pieceColor + 'P'
     const pieceCodeArray = snapshot.filter(code => code.includes(piece));
     let moves = [];
@@ -116,15 +59,22 @@ export function getPawnMoves(movements, snapshot, pieceColor) {
         const currCode = pieceCode.substring(2);
         const { row, col } = codeToTile(currCode);
         const dir = pieceColor === 'w' ? -1 : 1;
+
+        // Promotion squares are treated differently
         if ((row === 1 && pieceColor === 'w') || (row === 6 && pieceColor === 'b')) return;
-        // Logic for double move on first turn of the pawn
-        if (INITIAL_POSITION[piece].includes(currCode)) {            
-            let newRow = row + 1 * dir;
-            let newCode = tileToCode(newRow, col);
-            if (snapshot.findIndex(code => code.includes(newCode)) === -1) {
+        
+        let newRow = row + 1 * dir;
+        let newCode = tileToCode(newRow, col);
+        // If pawn can move forward
+        if (snapshot.findIndex(code => code.includes(newCode)) === -1) {
+            let move = piece + currCode + newCode;
+            moves.push(move);
+            // Logic for double move on first turn of the pawn       
+            if (INITIAL_POSITION[piece].includes(currCode)) {     
                 newRow += 1 * dir;
                 newCode = tileToCode(newRow, col);
-                const move = piece + currCode + newCode;
+                move = piece + currCode + newCode;
+                // If pawn can move forward
                 if (snapshot.findIndex(code => code.includes(newCode)) === -1) moves.push(move);
             }
         }
@@ -141,72 +91,55 @@ export function getPawnMoves(movements, snapshot, pieceColor) {
             moves.push(move);
         }
     })
-    moves = [...moves, ...getGenericMovesFromArray(movements, snapshot, piece)];
     
     return moves;
 }
 
-export default function getMoves(snapshot, pieceColor, prevMoves, lastMove, checkedByPieces, checkingMoves = [], hasKingMoved = false, recursive = true) {
+export default function getMoves(snapshot, pieceColor, prevMoves, lastMove, checkedByPieces, hasKingMoved = false, getLegalMoves = true) {
     let moves = [];
     let specialMoves = [];
     const isKingChecked = checkedByPieces > 0 ? true : false;
     if (checkedByPieces === 2) {
-        moves = [...moves, ...getKingMoves(MOVEMENTS['K'], snapshot, pieceColor, checkingMoves)];
-    } else {
-        for (const pieceType in MOVEMENTS) {
-            const movements = MOVEMENTS[pieceType];         
-            switch(pieceType) {
-                case 'K': {
-                    moves = [...moves, ...getKingMoves(movements, snapshot, pieceColor, prevMoves)];
-                    let currCode = snapshot.find(code => code.includes(pieceColor + 'K'));
-                    currCode = currCode.substring(2, 4);
-                    if (!isKingChecked && !hasKingMoved) {
-                        const castlingMoves = getCastling(snapshot, pieceColor, prevMoves);
-                        if (castlingMoves.length > 0) {
-                            specialMoves = [...specialMoves, ...castlingMoves]
-                        }
-                    }
-                    break;
-                }
-
-                case 'Q': {
-                    moves = [...moves, ...getQueenMoves(movements, snapshot, pieceColor)];
-                    break;  
-                }
-
-                case 'B': {
-                    moves = [...moves, ...getBishopMoves(movements, snapshot, pieceColor)];
-                    break;
-                }
-                
-                case 'N': {
-                    moves = [...moves, ...getKnightMoves(movements, snapshot, pieceColor)];
-                    break;
-                }
-
-                case 'R': {
-                    moves = [...moves, ...getRookMoves(movements, snapshot, pieceColor)];
-                    break;
-                }
-
-                case 'P': {
-                    moves = [...moves, ...getPawnMoves(movements, snapshot, pieceColor)];
-                    const enpassantMoves = getEnpassant(snapshot, pieceColor, lastMove);
-                    if (enpassantMoves.length > 0)
-                        specialMoves = [...specialMoves, ...enpassantMoves]
-                    const promotionMoves = getPromotion(snapshot, pieceColor);
-                    if (promotionMoves.length > 0)
-                        specialMoves = [...specialMoves, ...promotionMoves];
-                    break;
-                }
-                default: return moves;
+        moves = [...moves, ...getPieceMoves(MOVEMENTS['K'], snapshot, pieceColor + 'K')];
+    } else {        
+        moves = [...moves, ...getPieceMoves(MOVEMENTS['K'], snapshot, pieceColor + 'K')];
+        if (!isKingChecked && !hasKingMoved) {
+            const castlingMoves = getCastling(snapshot, pieceColor, prevMoves);
+            if (castlingMoves.length > 0) {
+                specialMoves = [...specialMoves, ...castlingMoves]
             }
+        }
+        
+        if (snapshot.findIndex(code => code.includes(pieceColor + 'Q')) !== -1) {
+            moves = [...moves, ...getPieceMoves(MOVEMENTS['Q'], snapshot, pieceColor + 'Q')];        
+        }
+
+        if (snapshot.findIndex(code => code.includes(pieceColor + 'B')) !== -1) {
+            moves = [...moves, ...getPieceMoves(MOVEMENTS['B'], snapshot, pieceColor + 'B')];
+        }
+
+        if (snapshot.findIndex(code => code.includes(pieceColor + 'N')) !== -1) {
+            moves = [...moves, ...getPieceMoves(MOVEMENTS['N'], snapshot, pieceColor + 'N')];
+        }
+
+        if (snapshot.findIndex(code => code.includes(pieceColor + 'R')) !== -1) {
+            moves = [...moves, ...getPieceMoves(MOVEMENTS['R'], snapshot, pieceColor + 'R')];
+        }
+        
+        if (snapshot.findIndex(code => code.includes(pieceColor + 'P')) !== -1) {
+            moves = [...moves, ...getPawnMoves(snapshot, pieceColor)];
+            const enpassantMoves = getEnpassant(snapshot, pieceColor, lastMove);
+            if (enpassantMoves.length > 0)
+                specialMoves = [...specialMoves, ...enpassantMoves]
+            const promotionMoves = getPromotion(snapshot, pieceColor);
+            if (promotionMoves.length > 0)
+                specialMoves = [...specialMoves, ...promotionMoves];
         }
     }
     
     if (specialMoves.length > 0) specialMoves.forEach( move => moves.push(move[0]))
 
-    if (recursive) {
+    if (getLegalMoves) {
         moves = moves.filter(move => {
             const newSnapshot = [...snapshot];
             const selected = move.substring(0, 4);

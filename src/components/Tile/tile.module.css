@@ -1,19 +1,11 @@
 .tile {
-    width: min(12vw, 12vh);
-    height: min(12vw, 12vh);
+    width: 11.5vmin;
+    height: 11.5vmin;
     display: inline-block;
     position: relative;
     margin: 0;
     padding: 0;
     box-shadow: inset 1px 0 2px #F0F3F5;
-}
-
-.tile:first-child {
-    border-left: 2px solid #F0F3F5;
-}
-
-.tile:last-child {
-    border-right: 2px solid #F0F3F5;
 }
 
 .white {
@@ -108,7 +100,7 @@
 
 @media only screen and (max-width: 1000px) {
     .tile {
-        width: min(11vw, 11vh);
-        height: min(11vw, 11vh);
+        width: 10vmin;
+        height: 10vmin;
     }
 }

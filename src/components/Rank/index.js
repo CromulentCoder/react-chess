@@ -14,8 +14,10 @@ const Rank = (props) => {
 
     let { backgroundColor } = props;
     return (
+        <>
         <div className= {css.container}>
             <div className = {css.row}>
+                {props.coords ? <p>{rankName}</p> : ""}
                 {files.map(file => {
                     const code = file + rankName;
                     const tilePos = (8 - rankName) + "" + files.indexOf(file);
@@ -24,7 +26,6 @@ const Rank = (props) => {
                     let PieceComponent = null;
                     const bg = backgroundColor;
                     backgroundColor = !backgroundColor;
-                    // console.log(index, code);
                     if (index !== -1) {
                         const pieceColor = snapshot[index].substring(0,1);
                         const pieceType = snapshot[index].substring(1,2);
@@ -46,11 +47,20 @@ const Rank = (props) => {
                 })}
             </div>
         </div>
+        {props.coords && rankName === 1 ? 
+            <div className = {css.container}>
+                {files.map(file => <p key = {file} className = {css.file}>{file}</p>)}
+            </div> : ""
+        }
+        </>
     )
 }
 
 const mapStateToProps = (state) => {
-    return {snapshot: state.game.present.snapshot}
+    return {
+        snapshot: state.game.present.snapshot,
+        coords: state.settings.coords
+    }
 }
 
 const ConnectedRank = connect(mapStateToProps)(memo(Rank));

@@ -2,7 +2,7 @@ import React from "react";
 import { connect } from "react-redux";
 import cx from "classnames";
 
-import { reset } from "../../redux/actions/history";
+import { reset, toggleCoordinates } from "../../redux/actions/settings";
 
 import { ReactComponent as Bars } from "./svgs/bars.svg";
 import css from './settings.module.css';
@@ -13,6 +13,7 @@ class Settings extends React.Component {
         
         this.state = {
             reset: props.reset,
+            toggleCoordinates: props.toggleCoordinates,
             isCollapsed: true
         }
     }
@@ -25,9 +26,14 @@ class Settings extends React.Component {
         
     }
 
-    handleClick = (e) => {
+    handleClickReset = (e) => {
         e.preventDefault();
         this.state.reset();
+    }
+
+    handleClickCoords = (e) => {
+        e.preventDefault();
+        this.state.toggleCoordinates();
     }
 
     render = () => {
@@ -41,8 +47,11 @@ class Settings extends React.Component {
                     [css.items]: true
                 })}>
                     <p className = {css.heading}> Settings </p>
-                    <button onClick = {e => this.handleClick(e)} className = {css.button}>
+                    <button onClick = {e => this.handleClickReset(e)} className = {css.button}>
                         Reset
+                    </button>
+                    <button onClick = {e => this.handleClickCoords(e)} className = {css.button}>
+                        Toggle Coordinates
                     </button>
                 </div>  
             </div>
@@ -52,7 +61,8 @@ class Settings extends React.Component {
 
 const ConnectedSettings = connect(
     null,
-    { reset }
+    { reset,
+    toggleCoordinates }
 )(Settings)
 
 export default ConnectedSettings;

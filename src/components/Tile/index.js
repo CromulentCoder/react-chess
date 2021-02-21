@@ -62,12 +62,27 @@ class Tile extends React.Component {
 const mapStateToProps = (state) => {
     const { game } = state;
 
-    const { present } = game;
+    const { present } = game || [];
 
     const { turn, selected, selectedMoves, checkedByPieces, snapshot, promotionCode, snapshotMove } = present;
 
-    let lastMoveOrigin = snapshotMove?.substring(2, 4); 
-    let lastMoveDestination = snapshotMove?.substring(4);
+    let lastMoveOrigin;
+    let lastMoveDestination;
+    if (snapshotMove === "O-O" || snapshotMove === "O-O-O") {
+        if (turn === 'w') {
+            lastMoveOrigin = "e8";
+            lastMoveDestination = snapshotMove === "O-O" ? "g8" : "c8";
+        } else {
+            lastMoveOrigin = "e1";
+            lastMoveDestination = snapshotMove === "O-O" ? "g1" : "c1";
+        }
+    }
+    else {
+        lastMoveOrigin = snapshotMove?.substring(2, 4);
+        lastMoveDestination = snapshotMove?.substring(4, 6);
+    }
+    
+
     return {
     turn,
     selected,
